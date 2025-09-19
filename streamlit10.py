@@ -40,7 +40,12 @@ df = load_data()
 
 # --- Sidebar UI ---
 st.sidebar.header("Filter Options")
-state_choice = st.sidebar.selectbox("Select State", df["state"].dropna().unique())
+state_list = df["state"].dropna().unique()
+state_choice = st.sidebar.selectbox(
+    "Select State",
+    state_list,
+    index=list(state_list).index("Selangor")  # default Selangor
+)
 district_choice = st.sidebar.selectbox(
     "Select District",
     df[df["state"] == state_choice]["district"].dropna().unique()
@@ -279,3 +284,4 @@ if run_button:
 
                     st.subheader("Model Accuracy (Backtest: June–Aug 2025)")
                     st.dataframe(accuracy_table.round(3))
+

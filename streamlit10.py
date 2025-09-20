@@ -59,12 +59,18 @@ st.title("Malaysia Item Price Forecasting")
 
 
 # --- Prophet Model Cache ---
-@st.cache_data
-def fit_prophet(df_prophet):
+# District-level model: cached for reuse
+@st.cache_resource
+def fit_prophet_district(df_prophet):
     m = Prophet()
     m.fit(df_prophet)
     return m
 
+# Premise-level model: no cache (always fresh)
+def fit_prophet_premise(df_prophet):
+    m = Prophet()
+    m.fit(df_prophet)
+    return m
 
 if run_button:
     filtered = df[
@@ -80,7 +86,7 @@ if run_button:
             st.warning("Not enough training data (June–Aug).")
         else:
             df_prophet = train_df.rename(columns={"date": "ds", "price": "y"})
-            model = fit_prophet(df_prophet)
+            model = fit_prophet_district(df_prophet)
 
             last_train = df_prophet["ds"].max().date()
             sel_date = pd.to_datetime(forecast_date).date()
@@ -110,7 +116,7 @@ if run_button:
                         (premise_data["date"] >= "2025-06-01") & (premise_data["date"] <= "2025-08-31")]
                     if len(train_premise) >= 10:
                         df_prophet_premise = train_premise.rename(columns={"date": "ds", "price": "y"})
-                        model_premise = fit_prophet(df_prophet_premise)
+                        model_premise = fit_prophet_premise(df_prophet_premise)
                         periods_premise = (sel_date - train_premise["date"].max().date()).days
                         if periods_premise >= 1:
                             future_premise = model_premise.make_future_dataframe(periods=periods_premise, freq="D")
@@ -220,6 +226,7 @@ if run_button:
                 })
                 st.subheader("Model Accuracy (Backtest: June–Aug 2025)")
                 st.dataframe(accuracy_table.round(3))
+
 
 
 

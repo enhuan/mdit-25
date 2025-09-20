@@ -184,23 +184,27 @@ if run_button:
                 else:
                     mae_p = mape_p = rmse_p = None
 
-                # Prepare forecast tables
+                # --- Forecast Tables ---
+
+                # District forecast table: only keep Date + District Forecast
                 district_table = forecast_slice.rename(
-                    columns={"yhat": "Forecast (District)", "yhat_lower": "Lower (District)",
-                             "yhat_upper": "Upper (District)"}
-                ).set_index("ds")
+                    columns={"ds": "Date", "yhat": "District Forecast"}
+                )[["Date", "District Forecast"]]
 
                 if premise_choice and len(train_premise) >= 10:
+                    # Premise forecast table: only keep Date + Premise Forecast
                     premise_table = forecast_slice_premise.rename(
-                        columns={"yhat": f"Forecast ({premise_choice})",
-                                 "yhat_lower": f"Lower ({premise_choice})",
-                                 "yhat_upper": f"Upper ({premise_choice})"}
-                    ).set_index("ds")
-                    # calculate % difference vs district
-                    premise_table["Change (%)"] = ((premise_table[f"Forecast ({premise_choice})"] - district_table[
-                        "Forecast (District)"]) /
-                                                   district_table["Forecast (District)"]) * 100
-                    combined_table = pd.concat([district_table, premise_table], axis=1)
+                        columns={"ds": "Date", "yhat": f"{premise_choice} Forecast"}
+                    )[["Date", f"{premise_choice} Forecast"]]
+
+                    # Merge with district forecast
+                    combined_table = district_table.merge(premise_table, on="Date", how="left")
+
+                    # Add % change column
+                    combined_table["Change (%)"] = (
+                            (combined_table[f"{premise_choice} Forecast"] - combined_table["District Forecast"]) /
+                            combined_table["District Forecast"] * 100
+                    )
                 else:
                     combined_table = district_table
 
@@ -216,6 +220,7 @@ if run_button:
                 })
                 st.subheader("Model Accuracy (Backtest: June–Aug 2025)")
                 st.dataframe(accuracy_table.round(3))
+
 
 
 
